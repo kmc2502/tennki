@@ -2,227 +2,78 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Weather Deck 詳細仕様書</title>
-    <meta name="description" content="Weather Deck（天気カードアプリ）詳細仕様書 v1.0" />
-    <style>
-      :root {
-        color-scheme: dark;
-        --bg: #0d1117;
-        --panel: #161b22;
-        --text: #e6edf3;
-        --muted: #9da7b3;
-        --link: #58a6ff;
-        --border: #30363d;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-        background: linear-gradient(180deg, #0b0f16 0%, #0d1117 100%);
-        color: var(--text);
-      }
-      header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        backdrop-filter: blur(8px);
-        background: rgba(13, 17, 23, 0.9);
-        border-bottom: 1px solid var(--border);
-      }
-      .wrap {
-        width: min(980px, 92vw);
-        margin: 0 auto;
-      }
-      .head-inner {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 14px 0;
-      }
-      .title {
-        font-size: 16px;
-        font-weight: 700;
-      }
-      .actions a {
-        color: var(--link);
-        text-decoration: none;
-        border: 1px solid var(--border);
-        padding: 8px 12px;
-        border-radius: 10px;
-        font-size: 13px;
-      }
-      main { padding: 24px 0 48px; }
-      .card {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 24px;
-      }
-      #content h1, #content h2, #content h3 { line-height: 1.3; }
-      #content p, #content li { line-height: 1.8; }
-      #content code {
-        background: #0b0f14;
-        border: 1px solid var(--border);
-        padding: 0.15em 0.35em;
-        border-radius: 6px;
-      }
-      #content pre {
-        overflow-x: auto;
-        padding: 14px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: #0b0f14;
-      }
-      .loading, .error { color: var(--muted); }
-      .fallback { margin-top: 12px; }
-      .raw {
-        white-space: pre-wrap;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 13px;
-      }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Deck</title>
+    <meta name="description" content="トランプカードで天気を楽しむ Weather Deck" />
+    <meta property="og:title" content="Weather Deck" />
+    <meta property="og:description" content="4枚のカードで天気を配る体験" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header>
-      <div class="wrap head-inner">
-        <div class="title">Weather Deck 詳細仕様書（Web表示）</div>
-        <div class="actions">
-          <a href="docs/weather-deck-spec-ja.md">Markdownを開く</a>
+    <div class="app" id="app">
+      <header class="header panel">
+        <div>
+          <h1 class="app-title">Weather Deck</h1>
+          <p class="city-name" id="cityName">--</p>
         </div>
-      </div>
-    </header>
+        <div class="header-actions">
+          <button id="openSearchBtn" aria-label="都市を検索">🔍</button>
+          <button id="openFavoriteBtn" aria-label="お気に入り">🗂</button>
+          <button id="openSettingsBtn" aria-label="設定">⚙</button>
+        </div>
+      </header>
 
-    <main class="wrap">
-      <article class="card" id="content">
-        <p class="loading">仕様書を読み込み中...</p>
-      </article>
-    </main>
+      <section class="time-row">
+        <p id="slotLabel">読み込み中...</p>
+        <button id="refreshBtn" class="ghost">再読み込み</button>
+      </section>
 
-    <script>
-      const contentEl = document.getElementById('content');
+      <section class="dealer panel" id="dealerPanel" hidden>
+        <div class="dealer-avatar">🃏</div>
+        <p id="dealerSpeech">本日は快晴です。</p>
+      </section>
 
-      const escapeHtml = (str) =>
-        str
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;');
+      <section class="main-grid" id="mainGrid"></section>
 
-      function renderMarkdownLite(md) {
-        const blocks = md.split('\n');
-        let inCode = false;
-        let inUl = false;
-        let inOl = false;
-        const html = [];
+      <section id="jokerArea"></section>
 
-        const closeLists = () => {
-          if (inUl) {
-            html.push('</ul>');
-            inUl = false;
-          }
-          if (inOl) {
-            html.push('</ol>');
-            inOl = false;
-          }
-        };
+      <section>
+        <h2>3時間予報</h2>
+        <div class="timeline" id="timeline"></div>
+      </section>
 
-        for (const line of blocks) {
-          if (line.startsWith('```')) {
-            closeLists();
-            html.push(inCode ? '</code></pre>' : '<pre><code>');
-            inCode = !inCode;
-            continue;
-          }
+      <footer class="footer-actions panel">
+        <button id="toggleFavoriteBtn">お気に入りに追加</button>
+        <button id="removeFavoriteBtn" class="ghost">お気に入りから削除</button>
+      </footer>
 
-          if (inCode) {
-            html.push(`${escapeHtml(line)}\n`);
-            continue;
-          }
+      <section id="errorPanel" class="error panel" hidden></section>
+    </div>
 
-          if (!line.trim()) {
-            closeLists();
-            continue;
-          }
+    <dialog id="searchDialog">
+      <h3>都市を検索</h3>
+      <input id="searchInput" type="text" placeholder="都市名を入力" />
+      <ul id="searchResults"></ul>
+      <button id="closeSearchBtn" class="ghost">閉じる</button>
+    </dialog>
 
-          if (line.startsWith('# ')) {
-            closeLists();
-            html.push(`<h1>${escapeHtml(line.slice(2))}</h1>`);
-            continue;
-          }
-          if (line.startsWith('## ')) {
-            closeLists();
-            html.push(`<h2>${escapeHtml(line.slice(3))}</h2>`);
-            continue;
-          }
-          if (line.startsWith('### ')) {
-            closeLists();
-            html.push(`<h3>${escapeHtml(line.slice(4))}</h3>`);
-            continue;
-          }
+    <dialog id="favoritesDialog">
+      <h3>お気に入り</h3>
+      <ul id="favoritesList"></ul>
+      <button id="closeFavoritesBtn" class="ghost">閉じる</button>
+    </dialog>
 
-          if (/^\d+\.\s+/.test(line)) {
-            if (inUl) {
-              html.push('</ul>');
-              inUl = false;
-            }
-            if (!inOl) {
-              html.push('<ol>');
-              inOl = true;
-            }
-            html.push(`<li>${escapeHtml(line.replace(/^\d+\.\s+/, ''))}</li>`);
-            continue;
-          }
+    <dialog id="settingsDialog">
+      <h3>設定</h3>
+      <label class="switch-row">
+        <input id="soundToggle" type="checkbox" />
+        効果音
+      </label>
+      <button id="closeSettingsBtn" class="ghost">閉じる</button>
+    </dialog>
 
-          if (line.startsWith('- ')) {
-            if (inOl) {
-              html.push('</ol>');
-              inOl = false;
-            }
-            if (!inUl) {
-              html.push('<ul>');
-              inUl = true;
-            }
-            html.push(`<li>${escapeHtml(line.slice(2))}</li>`);
-            continue;
-          }
+    <div id="toast"></div>
 
-          closeLists();
-          html.push(`<p>${escapeHtml(line)}</p>`);
-        }
-
-        closeLists();
-        return html.join('\n');
-      }
-
-      fetch('./docs/weather-deck-spec-ja.md')
-        .then((res) => {
-          if (!res.ok) throw new Error('仕様書の取得に失敗しました');
-          return res.text();
-        })
-        .then((md) => {
-          contentEl.innerHTML = renderMarkdownLite(md);
-        })
-        .catch((err) => {
-          contentEl.innerHTML = `
-            <p class="error">${err.message}</p>
-            <p class="fallback">表示に失敗したため、生テキストを表示します。</p>
-            <pre class="raw" id="raw">読み込み中...</pre>
-          `;
-
-          fetch('./docs/weather-deck-spec-ja.md')
-            .then((res) => res.text())
-            .then((text) => {
-              const raw = document.getElementById('raw');
-              if (raw) raw.textContent = text;
-            })
-            .catch(() => {
-              const raw = document.getElementById('raw');
-              if (raw) {
-                raw.textContent = 'docs/weather-deck-spec-ja.md を直接開いてください。';
-              }
-            });
-        });
-    </script>
+    <script src="./app.js" type="module"></script>
   </body>
 </html>
