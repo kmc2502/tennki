@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Weather Deck</title>
+    <meta name="description" content="天気をカードで見る Weather Deck" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0d1117;
+        --panel: #161b22;
+        --card: #12151c;
+        --text: #e6edf3;
+        --muted: #9da7b3;
+        --accent: #d2a842;
+        --border: #30363d;
+        --heart: #d95062;
+        --spade: #d7dde4;
+        --club: #79b093;
+        --diamond: #d9b05f;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+        background: radial-gradient(circle at top, #151c2d 0%, var(--bg) 45%);
+        color: var(--text);
+      }
+      .wrap { width: min(1100px, 92vw); margin: 0 auto; }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(13, 17, 23, 0.92);
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(8px);
+      }
+      .head-inner { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 14px 0; }
+      .app-title { font-weight: 700; letter-spacing: 0.03em; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      input, select, button {
+        background: #0f131a;
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+      button { cursor: pointer; }
+      button:hover { border-color: #4b5563; }
+      main { padding: 22px 0 52px; }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+      #status { color: var(--muted); font-size: 14px; }
+      .cards { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+      .card {
+        background: linear-gradient(170deg, #1a2232 0%, var(--card) 55%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+        min-height: 180px;
+        box-shadow: 0 7px 22px rgba(0,0,0,.35);
+      }
+      .card-head { display: flex; justify-content: space-between; align-items: center; }
+      .rank { font-size: 28px; font-weight: 800; }
+      .suit { font-size: 20px; }
+      .suit-heart { color: var(--heart); }
+      .suit-spade { color: var(--spade); }
+      .suit-club { color: var(--club); }
+      .suit-diamond { color: var(--diamond); }
+      .element { margin-top: 26px; font-size: 16px; color: var(--muted); }
+      .value { margin-top: 6px; font-size: 26px; font-weight: 700; }
+      .label { margin-top: 8px; color: var(--muted); font-size: 14px; }
+      .dealer {
+        margin-top: 14px;
+        display: none;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: end;
+      }
+      .dealer.show { display: grid; }
+      .dealer-avatar {
+        width: 62px; height: 62px;
+        border-radius: 50%;
+        background: linear-gradient(145deg,#5936a5,#b13f70);
+        display: grid; place-items: center;
+        font-size: 30px;
+        border: 1px solid var(--border);
+      }
+      .bubble {
+        border: 1px solid #644d25;
+        background: #231f16;
+        color: #f6e7c0;
+        border-radius: 12px;
+        padding: 10px 12px;
+      }
+      .timeline { margin-top: 16px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(185px, 1fr); overflow-x: auto; gap: 10px; padding-bottom: 4px; }
+      .slot { border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: #10141c; }
+      .slot-time { font-weight: 700; margin-bottom: 7px; }
+      .slot-line { font-size: 13px; color: var(--muted); margin-bottom: 3px; }
+      .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+      .error { margin-top: 10px; color: #fda4af; }
+      @media (min-width: 900px) {
+        .cards { grid-template-columns: repeat(4, minmax(0,1fr)); }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap head-inner">
+        <div class="app-title">🃏 Weather Deck</div>
+        <div class="toolbar">
+          <input id="cityInput" placeholder="都市名（例: 東京）" value="東京" />
+          <button id="searchBtn">検索</button>
+          <select id="favoriteSelect"><option value="">お気に入り</option></select>
+          <button id="favBtn">お気に入り追加</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="panel">
+        <div class="row">
+          <div id="cityLabel">都市: -</div>
+          <div id="status">読み込み待ち</div>
+        </div>
+        <div id="dealer" class="dealer">
+          <div class="dealer-avatar">🎩</div>
+          <div id="dealerText" class="bubble"></div>
+        </div>
+        <div id="mainCards" class="cards"></div>
+        <div id="timeline" class="timeline"></div>
+        <div class="hint">※ 雲量ランクは逆順（低いほど 2 / 高いほど 3）</div>
+        <div id="error" class="error" hidden></div>
+      </section>
+    </main>
+
+    <script>
+      const RANKS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
+      const CLOUD_RANKS_REVERSED = [...RANKS].reverse();
+      const STORAGE_KEYS = {
+        currentCity: 'weatherDeck.currentCity',
+        favorites: 'weatherDeck.favorites',
+      };
+
+      const state = {
+        city: loadJson(STORAGE_KEYS.currentCity, null) || null,
+        favorites: loadJson(STORAGE_KEYS.favorites, []),
+      };
+
+      const cityInput = document.getElementById('cityInput');
+      const searchBtn = document.getElementById('searchBtn');
+      const favBtn = document.getElementById('favBtn');
+      const favoriteSelect = document.getElementById('favoriteSelect');
+      const cityLabel = document.getElementById('cityLabel');
+      const statusEl = document.getElementById('status');
+      const mainCards = document.getElementById('mainCards');
+      const timeline = document.getElementById('timeline');
+      const errorEl = document.getElementById('error');
+      const dealerEl = document.getElementById('dealer');
+      const dealerText = document.getElementById('dealerText');
+
+      function loadJson(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function saveJson(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+
+      function clamp(v, min, max) {
+        return Math.min(max, Math.max(min, v));
+      }
+
+      function rankByRange(value, min, max, ranks = RANKS) {
+        const safe = clamp(value, min, max);
+        const step = (max - min) / 13;
+        const idx = Math.min(12, Math.floor((safe - min) / step));
+        return ranks[idx];
+      }
+
+      function labelByRank(rank) {
+        const idx = RANKS.indexOf(rank);
+        if (idx <= 2) return '低い';
+        if (idx <= 5) return 'やや低い';
+        if (idx <= 7) return 'ふつう';
+        if (idx <= 10) return 'やや高い';
+        return '高い';
+      }
+
+      function dealerMessageFromWeatherCode(code) {
+        if ([0, 1].includes(code)) return '快晴';
+        if ([66, 67].includes(code)) return 'みぞれ';
+        if ([71, 73, 75, 77, 85, 86].includes(code)) return '雪';
+        if ([51, 53, 55, 56, 57, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) return '雨';
+        return null;
+      }
+
+      function makeCard({ suitSymbol, suitClass, title, rank, value, unit }) {
+        return `
+          <article class="card">
+            <div class="card-head">
+              <div class="rank">${rank}</div>
+              <div class="suit ${suitClass}">${suitSymbol}</div>
+            </div>
+            <div class="element">${title}</div>
+            <div class="value">${value}${unit}</div>
+            <div class="label">${labelByRank(rank)}</div>
+          </article>
+        `;
+      }
+
+      function fillFavoriteSelect() {
+        const options = ['<option value="">お気に入り</option>']
+          .concat(state.favorites.map((city) => `<option value="${city.id}">${city.name}</option>`));
+        favoriteSelect.innerHTML = options.join('');
+      }
+
+      async function searchCity(query) {
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=ja&format=json`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const result = data.results?.[0];
+        if (!result) throw new Error('都市が見つかりませんでした');
+        return {
+          id: `${result.latitude},${result.longitude}`,
+          name: result.name,
+          region: result.admin1 || '',
+          country: result.country || '',
+          lat: result.latitude,
+          lon: result.longitude,
+          timezone: result.timezone,
+        };
+      }
+
+      async function getForecast(city) {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,cloud_cover,weather_code&forecast_days=2&timezone=auto`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('天気データの取得に失敗しました');
+        const data = await res.json();
+        const times = data.hourly.time;
+        const now = Date.now();
+        let nearest = 0;
+        let minDiff = Infinity;
+        for (let i = 0; i < times.length; i++) {
+          const d = Math.abs(new Date(times[i]).getTime() - now);
+          if (d < minDiff) {
+            minDiff = d;
+            nearest = i;
+          }
+        }
+        const slots = [];
+        for (let i = nearest; i < Math.min(times.length, nearest + 24); i += 3) {
+          slots.push({
+            time: times[i],
+            temperature: data.hourly.temperature_2m[i],
+            humidity: data.hourly.relative_humidity_2m[i],
+            pressure: data.hourly.surface_pressure[i],
+            cloud: data.hourly.cloud_cover[i],
+            weatherCode: data.hourly.weather_code[i],
+          });
+        }
+        return slots;
+      }
+
+      function render(city, slots) {
+        cityLabel.textContent = `都市: ${city.name}${city.region ? ' / ' + city.region : ''}`;
+        const nowSlot = slots[0];
+        const timeLabel = new Date(nowSlot.time).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        statusEl.textContent = `${timeLabel} 時点の予報`;
+
+        const cardsHtml = [
+          makeCard({ suitSymbol: '♥', suitClass: 'suit-heart', title: '雲量', rank: rankByRange(nowSlot.cloud, 0, 100, CLOUD_RANKS_REVERSED), value: Math.round(nowSlot.cloud), unit: '%' }),
+          makeCard({ suitSymbol: '♠', suitClass: 'suit-spade', title: '気圧', rank: rankByRange(nowSlot.pressure, 980, 1040), value: Math.round(nowSlot.pressure), unit: 'hPa' }),
+          makeCard({ suitSymbol: '♣', suitClass: 'suit-club', title: '湿度', rank: rankByRange(nowSlot.humidity, 0, 100), value: Math.round(nowSlot.humidity), unit: '%' }),
+          makeCard({ suitSymbol: '♦', suitClass: 'suit-diamond', title: '気温', rank: rankByRange(nowSlot.temperature, -5, 40), value: nowSlot.temperature.toFixed(1), unit: '℃' }),
+        ];
+        mainCards.innerHTML = cardsHtml.join('');
+
+        const weatherWord = dealerMessageFromWeatherCode(nowSlot.weatherCode);
+        if (weatherWord) {
+          dealerText.textContent = `本日は${weatherWord}です。`;
+          dealerEl.classList.add('show');
+        } else {
+          dealerText.textContent = '';
+          dealerEl.classList.remove('show');
+        }
+
+        timeline.innerHTML = slots.slice(0, 8).map((slot) => {
+          const t = new Date(slot.time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+          return `
+            <article class="slot">
+              <div class="slot-time">${t}</div>
+              <div class="slot-line">♥ ${rankByRange(slot.cloud, 0, 100, CLOUD_RANKS_REVERSED)} / ${Math.round(slot.cloud)}%</div>
+              <div class="slot-line">♠ ${rankByRange(slot.pressure, 980, 1040)} / ${Math.round(slot.pressure)}hPa</div>
+              <div class="slot-line">♣ ${rankByRange(slot.humidity, 0, 100)} / ${Math.round(slot.humidity)}%</div>
+              <div class="slot-line">♦ ${rankByRange(slot.temperature, -5, 40)} / ${slot.temperature.toFixed(1)}℃</div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      async function loadCityForecast(city) {
+        errorEl.hidden = true;
+        statusEl.textContent = '読み込み中...';
+        try {
+          const slots = await getForecast(city);
+          if (!slots.length) throw new Error('予報データがありません');
+          state.city = city;
+          saveJson(STORAGE_KEYS.currentCity, city);
+          render(city, slots);
+        } catch (err) {
+          errorEl.hidden = false;
+          errorEl.textContent = err.message;
+          statusEl.textContent = '読み込み失敗';
+        }
+      }
+
+      searchBtn.addEventListener('click', async () => {
+        const query = cityInput.value.trim();
+        if (!query) return;
+        try {
+          const city = await searchCity(query);
+          await loadCityForecast(city);
+        } catch (err) {
+          errorEl.hidden = false;
+          errorEl.textContent = err.message;
+        }
+      });
+
+      cityInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchBtn.click();
+      });
+
+      favBtn.addEventListener('click', () => {
+        if (!state.city) return;
+        if (state.favorites.some((c) => c.id === state.city.id)) {
+          statusEl.textContent = 'すでにお気に入りです';
+          return;
+        }
+        if (state.favorites.length >= 5) {
+          statusEl.textContent = 'お気に入りは5件までです';
+          return;
+        }
+        state.favorites.push(state.city);
+        saveJson(STORAGE_KEYS.favorites, state.favorites);
+        fillFavoriteSelect();
+        statusEl.textContent = 'お気に入りに追加しました';
+      });
+
+      favoriteSelect.addEventListener('change', () => {
+        const selected = state.favorites.find((city) => city.id === favoriteSelect.value);
+        if (selected) {
+          cityInput.value = selected.name;
+          loadCityForecast(selected);
+        }
+      });
+
+      (async function init() {
+        fillFavoriteSelect();
+        const initialCity = state.city || await searchCity('東京');
+        cityInput.value = initialCity.name;
+        loadCityForecast(initialCity);
+      })();
+    </script>
+  </body>
+</html>
