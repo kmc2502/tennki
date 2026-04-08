@@ -2,170 +2,248 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Weather Deck</title>
-    <meta name="description" content="天気をカードで見る Weather Deck" />
+    <meta name="description" content="トランプカードで天気を表示する Weather Deck" />
     <style>
       :root {
         color-scheme: dark;
         --bg: #0d1117;
+        --bg-soft: #131a27;
         --panel: #161b22;
-        --card: #12151c;
-        --text: #e6edf3;
-        --muted: #9da7b3;
-        --accent: #d2a842;
-        --border: #30363d;
-        --heart: #d95062;
-        --spade: #d7dde4;
-        --club: #79b093;
-        --diamond: #d9b05f;
+        --card: #121722;
+        --text: #edf2f8;
+        --muted: #9ba7b6;
+        --line: #2f3742;
+        --heart: #cb3d59;
+        --spade: #dde6f2;
+        --club: #70a891;
+        --diamond: #d8b265;
+        --gold: #d7b66e;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-        background: radial-gradient(circle at top, #151c2d 0%, var(--bg) 45%);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
         color: var(--text);
+        background: radial-gradient(circle at top, #1b2436 0%, var(--bg) 50%);
       }
-      .wrap { width: min(1100px, 92vw); margin: 0 auto; }
-      header {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: rgba(13, 17, 23, 0.92);
-        border-bottom: 1px solid var(--border);
-        backdrop-filter: blur(8px);
-      }
-      .head-inner { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 14px 0; }
-      .app-title { font-weight: 700; letter-spacing: 0.03em; }
-      .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-      input, select, button {
-        background: #0f131a;
+      button, input, select {
         color: var(--text);
-        border: 1px solid var(--border);
+        background: #10151f;
+        border: 1px solid var(--line);
         border-radius: 10px;
         padding: 8px 10px;
       }
       button { cursor: pointer; }
-      button:hover { border-color: #4b5563; }
-      main { padding: 22px 0 52px; }
+      .wrap { width: min(1100px, 92vw); margin: 0 auto; }
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid var(--line);
+        background: rgba(13, 17, 23, .9);
+        backdrop-filter: blur(10px);
+      }
+      .head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 0;
+      }
+      .title { font-weight: 800; letter-spacing: .04em; }
+      .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+      main { padding: 18px 0 40px; }
       .panel {
         background: var(--panel);
-        border: 1px solid var(--border);
+        border: 1px solid var(--line);
         border-radius: 14px;
-        padding: 16px;
-      }
-      .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
-      #status { color: var(--muted); font-size: 14px; }
-      .cards { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
-      .card {
-        background: linear-gradient(170deg, #1a2232 0%, var(--card) 55%);
-        border: 1px solid var(--border);
-        border-radius: 16px;
         padding: 14px;
-        min-height: 180px;
-        box-shadow: 0 7px 22px rgba(0,0,0,.35);
       }
-      .card-head { display: flex; justify-content: space-between; align-items: center; }
-      .rank { font-size: 28px; font-weight: 800; }
-      .suit { font-size: 20px; }
-      .suit-heart { color: var(--heart); }
-      .suit-spade { color: var(--spade); }
-      .suit-club { color: var(--club); }
-      .suit-diamond { color: var(--diamond); }
-      .element { margin-top: 26px; font-size: 16px; color: var(--muted); }
-      .value { margin-top: 6px; font-size: 26px; font-weight: 700; }
-      .label { margin-top: 8px; color: var(--muted); font-size: 14px; }
-      .dealer {
+      .info-row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--muted);
+      }
+      .grid {
         margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        gap: 10px;
+      }
+      .weather-card {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(170deg, #1b2538 0%, var(--card) 58%);
+        padding: 12px;
+        min-height: 175px;
+        box-shadow: 0 6px 20px rgba(0,0,0,.35);
+        transform: translateY(8px) scale(.98);
+        opacity: 0;
+        animation: deal .28s ease forwards;
+      }
+      @keyframes deal {
+        to { transform: translateY(0) scale(1); opacity: 1; }
+      }
+      .rank { font-size: 28px; font-weight: 800; }
+      .suit { position: absolute; right: 12px; top: 10px; font-size: 20px; }
+      .heart { color: var(--heart); }
+      .spade { color: var(--spade); }
+      .club { color: var(--club); }
+      .diamond { color: var(--diamond); }
+      .card-title { margin-top: 24px; font-size: 15px; color: var(--muted); }
+      .value { margin-top: 6px; font-size: 25px; font-weight: 700; }
+      .meta { margin-top: 8px; font-size: 13px; color: var(--muted); }
+      .joker {
+        margin-top: 12px;
+        display: none;
+        border: 1px solid #7a4b57;
+        border-radius: 14px;
+        padding: 12px;
+        background: linear-gradient(140deg, #3a1b2d, #1a141d);
+      }
+      .joker.show { display: block; }
+      .joker h3 { margin: 0 0 6px; color: #f8c7d0; }
+      .dealer {
+        margin-top: 12px;
         display: none;
         grid-template-columns: auto 1fr;
         gap: 10px;
-        align-items: end;
+        align-items: center;
       }
       .dealer.show { display: grid; }
-      .dealer-avatar {
-        width: 62px; height: 62px;
+      .avatar {
+        width: 56px;
+        height: 56px;
         border-radius: 50%;
-        background: linear-gradient(145deg,#5936a5,#b13f70);
-        display: grid; place-items: center;
-        font-size: 30px;
-        border: 1px solid var(--border);
+        border: 1px solid var(--line);
+        display: grid;
+        place-items: center;
+        font-size: 28px;
+        background: linear-gradient(145deg,#522f91,#a23f67);
       }
       .bubble {
-        border: 1px solid #644d25;
-        background: #231f16;
-        color: #f6e7c0;
+        border: 1px solid #6e5930;
         border-radius: 12px;
-        padding: 10px 12px;
+        padding: 10px;
+        color: #f7e6c0;
+        background: #2c2418;
       }
-      .timeline { margin-top: 16px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(185px, 1fr); overflow-x: auto; gap: 10px; padding-bottom: 4px; }
-      .slot { border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: #10141c; }
+      .timeline {
+        margin-top: 12px;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(188px, 1fr);
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .slot {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 10px;
+        background: #10151f;
+        cursor: pointer;
+      }
+      .slot.active { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
       .slot-time { font-weight: 700; margin-bottom: 7px; }
-      .slot-line { font-size: 13px; color: var(--muted); margin-bottom: 3px; }
-      .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
-      .error { margin-top: 10px; color: #fda4af; }
+      .slot-line { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+      .error { margin-top: 10px; color: #ffb0b0; }
+      .hint { margin-top: 10px; font-size: 12px; color: var(--muted); }
       @media (min-width: 900px) {
-        .cards { grid-template-columns: repeat(4, minmax(0,1fr)); }
+        .grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
       }
     </style>
   </head>
   <body>
     <header>
-      <div class="wrap head-inner">
-        <div class="app-title">🃏 Weather Deck</div>
-        <div class="toolbar">
-          <input id="cityInput" placeholder="都市名（例: 東京）" value="東京" />
-          <button id="searchBtn">検索</button>
+      <div class="wrap head">
+        <div class="title">🃏 Weather Deck</div>
+        <div class="controls">
+          <input id="cityInput" value="東京" placeholder="都市名" />
+          <button id="searchBtn">都市を検索</button>
+          <button id="reloadBtn">再読み込み</button>
           <select id="favoriteSelect"><option value="">お気に入り</option></select>
-          <button id="favBtn">お気に入り追加</button>
+          <button id="addFavBtn">お気に入り追加</button>
+          <button id="removeFavBtn">削除</button>
+          <label><input id="soundToggle" type="checkbox" checked /> 効果音</label>
         </div>
       </div>
     </header>
 
     <main class="wrap">
       <section class="panel">
-        <div class="row">
+        <div class="info-row">
           <div id="cityLabel">都市: -</div>
+          <div id="timeLabel">--</div>
           <div id="status">読み込み待ち</div>
         </div>
+
         <div id="dealer" class="dealer">
-          <div class="dealer-avatar">🎩</div>
-          <div id="dealerText" class="bubble"></div>
+          <div class="avatar">🎩</div>
+          <div id="dealerSpeech" class="bubble"></div>
         </div>
-        <div id="mainCards" class="cards"></div>
+
+        <div id="mainGrid" class="grid"></div>
+
+        <article id="joker" class="joker">
+          <h3>JOKER</h3>
+          <div id="jokerLevel"></div>
+          <div id="jokerMsg"></div>
+        </article>
+
         <div id="timeline" class="timeline"></div>
-        <div class="hint">※ 雲量ランクは逆順（低いほど 2 / 高いほど 3）</div>
+        <div class="hint">雲量ランクは逆順（低い→2 / 高い→3）。タイムラインをタップするとメイン表示が切り替わります。</div>
         <div id="error" class="error" hidden></div>
       </section>
     </main>
 
     <script>
       const RANKS = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
-      const CLOUD_RANKS_REVERSED = [...RANKS].reverse();
+      const CLOUD_RANKS = [...RANKS].reverse();
       const STORAGE_KEYS = {
         currentCity: 'weatherDeck.currentCity',
         favorites: 'weatherDeck.favorites',
+        settings: 'weatherDeck.settings',
       };
 
       const state = {
-        city: loadJson(STORAGE_KEYS.currentCity, null) || null,
-        favorites: loadJson(STORAGE_KEYS.favorites, []),
+        currentCity: readJson(STORAGE_KEYS.currentCity, null),
+        favorites: readJson(STORAGE_KEYS.favorites, []),
+        settings: readJson(STORAGE_KEYS.settings, { soundEnabled: true }),
+        slots: [],
+        selectedSlotIndex: 0,
       };
 
-      const cityInput = document.getElementById('cityInput');
-      const searchBtn = document.getElementById('searchBtn');
-      const favBtn = document.getElementById('favBtn');
-      const favoriteSelect = document.getElementById('favoriteSelect');
-      const cityLabel = document.getElementById('cityLabel');
-      const statusEl = document.getElementById('status');
-      const mainCards = document.getElementById('mainCards');
-      const timeline = document.getElementById('timeline');
-      const errorEl = document.getElementById('error');
-      const dealerEl = document.getElementById('dealer');
-      const dealerText = document.getElementById('dealerText');
+      const refs = {
+        cityInput: document.getElementById('cityInput'),
+        searchBtn: document.getElementById('searchBtn'),
+        reloadBtn: document.getElementById('reloadBtn'),
+        favoriteSelect: document.getElementById('favoriteSelect'),
+        addFavBtn: document.getElementById('addFavBtn'),
+        removeFavBtn: document.getElementById('removeFavBtn'),
+        soundToggle: document.getElementById('soundToggle'),
+        cityLabel: document.getElementById('cityLabel'),
+        timeLabel: document.getElementById('timeLabel'),
+        status: document.getElementById('status'),
+        dealer: document.getElementById('dealer'),
+        dealerSpeech: document.getElementById('dealerSpeech'),
+        mainGrid: document.getElementById('mainGrid'),
+        timeline: document.getElementById('timeline'),
+        joker: document.getElementById('joker'),
+        jokerLevel: document.getElementById('jokerLevel'),
+        jokerMsg: document.getElementById('jokerMsg'),
+        error: document.getElementById('error'),
+      };
 
-      function loadJson(key, fallback) {
+      refs.soundToggle.checked = !!state.settings.soundEnabled;
+
+      function readJson(key, fallback) {
         try {
           const raw = localStorage.getItem(key);
           return raw ? JSON.parse(raw) : fallback;
@@ -178,200 +256,317 @@
         localStorage.setItem(key, JSON.stringify(value));
       }
 
-      function clamp(v, min, max) {
-        return Math.min(max, Math.max(min, v));
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
       }
 
-      function rankByRange(value, min, max, ranks = RANKS) {
-        const safe = clamp(value, min, max);
+      function rankByThreshold(value, min, max, ranks = RANKS) {
+        if (value == null || Number.isNaN(value)) return '-';
+        const v = clamp(value, min, max);
         const step = (max - min) / 13;
-        const idx = Math.min(12, Math.floor((safe - min) / step));
+        const idx = Math.min(12, Math.floor((v - min) / step));
         return ranks[idx];
       }
 
       function labelByRank(rank) {
-        const idx = RANKS.indexOf(rank);
-        if (idx <= 2) return '低い';
-        if (idx <= 5) return 'やや低い';
-        if (idx <= 7) return 'ふつう';
-        if (idx <= 10) return 'やや高い';
+        const i = RANKS.indexOf(rank);
+        if (i <= 2) return '低い';
+        if (i <= 5) return 'やや低い';
+        if (i <= 7) return 'ふつう';
+        if (i <= 10) return 'やや高い';
         return '高い';
       }
 
-      function dealerMessageFromWeatherCode(code) {
+      function weatherStateFromCode(code) {
         if ([0, 1].includes(code)) return '快晴';
         if ([66, 67].includes(code)) return 'みぞれ';
         if ([71, 73, 75, 77, 85, 86].includes(code)) return '雪';
-        if ([51, 53, 55, 56, 57, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(code)) return '雨';
+        if ([51, 53, 55, 56, 57, 61, 63, 65, 80, 81, 82].includes(code)) return '雨';
         return null;
       }
 
-      function makeCard({ suitSymbol, suitClass, title, rank, value, unit }) {
+      function getJokerInfo(code) {
+        if ([96, 99].includes(code)) {
+          return { level: '特別警報級', message: '激しい雷雨の可能性があります' };
+        }
+        if ([95].includes(code)) {
+          return { level: '警報級', message: '雷雨の可能性があります' };
+        }
+        if ([65, 67, 82, 86].includes(code)) {
+          return { level: '注意報級', message: '強い降水に注意してください' };
+        }
+        return null;
+      }
+
+      function playDealSound() {
+        if (!state.settings.soundEnabled) return;
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = ctx.createOscillator();
+          const gain = ctx.createGain();
+          oscillator.type = 'triangle';
+          oscillator.frequency.value = 460;
+          gain.gain.value = 0.02;
+          oscillator.connect(gain);
+          gain.connect(ctx.destination);
+          oscillator.start();
+          oscillator.stop(ctx.currentTime + 0.06);
+        } catch {
+          // no-op
+        }
+      }
+
+      function cardTemplate({ suit, className, title, raw, unit, rank, delay, label }) {
         return `
-          <article class="card">
-            <div class="card-head">
-              <div class="rank">${rank}</div>
-              <div class="suit ${suitClass}">${suitSymbol}</div>
-            </div>
-            <div class="element">${title}</div>
-            <div class="value">${value}${unit}</div>
-            <div class="label">${labelByRank(rank)}</div>
+          <article class="weather-card" style="animation-delay:${delay}ms">
+            <div class="rank">${rank}</div>
+            <div class="suit ${className}">${suit}</div>
+            <div class="card-title">${title}</div>
+            <div class="value">${raw}${unit}</div>
+            <div class="meta">${label}</div>
           </article>
         `;
       }
 
-      function fillFavoriteSelect() {
-        const options = ['<option value="">お気に入り</option>']
-          .concat(state.favorites.map((city) => `<option value="${city.id}">${city.name}</option>`));
-        favoriteSelect.innerHTML = options.join('');
+      function renderMain() {
+        const slot = state.slots[state.selectedSlotIndex];
+        if (!slot) return;
+
+        refs.timeLabel.textContent = `${slot.localLabel} の予報`;
+
+        const cards = [
+          {
+            suit: '♥', className: 'heart', title: '雲量',
+            raw: Math.round(slot.cloud), unit: '%',
+            rank: rankByThreshold(slot.cloud, 0, 100, CLOUD_RANKS),
+          },
+          {
+            suit: '♠', className: 'spade', title: '気圧',
+            raw: Math.round(slot.pressure), unit: 'hPa',
+            rank: rankByThreshold(slot.pressure, 980, 1040),
+          },
+          {
+            suit: '♣', className: 'club', title: '湿度',
+            raw: Math.round(slot.humidity), unit: '%',
+            rank: rankByThreshold(slot.humidity, 0, 100),
+          },
+          {
+            suit: '♦', className: 'diamond', title: '気温',
+            raw: slot.temperature.toFixed(1), unit: '℃',
+            rank: rankByThreshold(slot.temperature, -5, 40),
+          },
+        ];
+
+        refs.mainGrid.innerHTML = cards
+          .map((c, index) => cardTemplate({ ...c, delay: index * 70, label: labelByRank(c.rank) }))
+          .join('');
+
+        playDealSound();
+
+        const weather = weatherStateFromCode(slot.weatherCode);
+        if (weather) {
+          refs.dealerSpeech.textContent = `本日は${weather}です。`;
+          refs.dealer.classList.add('show');
+        } else {
+          refs.dealer.classList.remove('show');
+          refs.dealerSpeech.textContent = '';
+        }
+
+        const joker = getJokerInfo(slot.weatherCode);
+        if (joker) {
+          refs.joker.classList.add('show');
+          refs.jokerLevel.textContent = `レベル: ${joker.level}`;
+          refs.jokerMsg.textContent = joker.message;
+        } else {
+          refs.joker.classList.remove('show');
+          refs.jokerLevel.textContent = '';
+          refs.jokerMsg.textContent = '';
+        }
+      }
+
+      function renderTimeline() {
+        refs.timeline.innerHTML = state.slots.slice(0, 8).map((slot, idx) => {
+          const activeClass = idx === state.selectedSlotIndex ? 'active' : '';
+          const jokerMark = getJokerInfo(slot.weatherCode) ? ' 🃏' : '';
+          return `
+            <article class="slot ${activeClass}" data-index="${idx}">
+              <div class="slot-time">${slot.localLabel}${jokerMark}</div>
+              <div class="slot-line">♥ ${rankByThreshold(slot.cloud, 0, 100, CLOUD_RANKS)} / ${Math.round(slot.cloud)}%</div>
+              <div class="slot-line">♠ ${rankByThreshold(slot.pressure, 980, 1040)} / ${Math.round(slot.pressure)}hPa</div>
+              <div class="slot-line">♣ ${rankByThreshold(slot.humidity, 0, 100)} / ${Math.round(slot.humidity)}%</div>
+              <div class="slot-line">♦ ${rankByThreshold(slot.temperature, -5, 40)} / ${slot.temperature.toFixed(1)}℃</div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      function renderFavorites() {
+        const head = '<option value="">お気に入り</option>';
+        const options = state.favorites.map((city) => `<option value="${city.id}">${city.name}</option>`).join('');
+        refs.favoriteSelect.innerHTML = head + options;
+      }
+
+      function setStatus(message) {
+        refs.status.textContent = message;
+      }
+
+      function setError(message) {
+        refs.error.hidden = !message;
+        refs.error.textContent = message || '';
       }
 
       async function searchCity(query) {
-        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=ja&format=json`;
+        const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=ja&format=json`;
         const res = await fetch(url);
         const data = await res.json();
-        const result = data.results?.[0];
-        if (!result) throw new Error('都市が見つかりませんでした');
+        const city = data.results?.[0];
+        if (!city) throw new Error('都市が見つかりませんでした');
         return {
-          id: `${result.latitude},${result.longitude}`,
-          name: result.name,
-          region: result.admin1 || '',
-          country: result.country || '',
-          lat: result.latitude,
-          lon: result.longitude,
-          timezone: result.timezone,
+          id: `${city.latitude},${city.longitude}`,
+          name: city.name,
+          region: city.admin1 || '',
+          country: city.country || '',
+          lat: city.latitude,
+          lon: city.longitude,
         };
       }
 
-      async function getForecast(city) {
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,cloud_cover,weather_code&forecast_days=2&timezone=auto`;
+      async function getForecastSlots(city) {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m,relative_humidity_2m,surface_pressure,cloud_cover,weather_code&timezone=auto&forecast_days=3`;
         const res = await fetch(url);
         if (!res.ok) throw new Error('天気データの取得に失敗しました');
         const data = await res.json();
+
         const times = data.hourly.time;
         const now = Date.now();
-        let nearest = 0;
+        let nearestIndex = 0;
         let minDiff = Infinity;
-        for (let i = 0; i < times.length; i++) {
-          const d = Math.abs(new Date(times[i]).getTime() - now);
-          if (d < minDiff) {
-            minDiff = d;
-            nearest = i;
+        times.forEach((t, i) => {
+          const diff = Math.abs(new Date(t).getTime() - now);
+          if (diff < minDiff) {
+            minDiff = diff;
+            nearestIndex = i;
           }
-        }
+        });
+
         const slots = [];
-        for (let i = nearest; i < Math.min(times.length, nearest + 24); i += 3) {
+        for (let i = nearestIndex; i < Math.min(times.length, nearestIndex + 48); i += 3) {
+          const date = new Date(times[i]);
           slots.push({
-            time: times[i],
-            temperature: data.hourly.temperature_2m[i],
-            humidity: data.hourly.relative_humidity_2m[i],
-            pressure: data.hourly.surface_pressure[i],
+            timeIso: times[i],
+            localLabel: date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
             cloud: data.hourly.cloud_cover[i],
+            pressure: data.hourly.surface_pressure[i],
+            humidity: data.hourly.relative_humidity_2m[i],
+            temperature: data.hourly.temperature_2m[i],
             weatherCode: data.hourly.weather_code[i],
           });
         }
         return slots;
       }
 
-      function render(city, slots) {
-        cityLabel.textContent = `都市: ${city.name}${city.region ? ' / ' + city.region : ''}`;
-        const nowSlot = slots[0];
-        const timeLabel = new Date(nowSlot.time).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-        statusEl.textContent = `${timeLabel} 時点の予報`;
+      async function loadCity(city) {
+        setError('');
+        setStatus('読み込み中...');
+        refs.cityLabel.textContent = `都市: ${city.name}${city.region ? ` / ${city.region}` : ''}`;
 
-        const cardsHtml = [
-          makeCard({ suitSymbol: '♥', suitClass: 'suit-heart', title: '雲量', rank: rankByRange(nowSlot.cloud, 0, 100, CLOUD_RANKS_REVERSED), value: Math.round(nowSlot.cloud), unit: '%' }),
-          makeCard({ suitSymbol: '♠', suitClass: 'suit-spade', title: '気圧', rank: rankByRange(nowSlot.pressure, 980, 1040), value: Math.round(nowSlot.pressure), unit: 'hPa' }),
-          makeCard({ suitSymbol: '♣', suitClass: 'suit-club', title: '湿度', rank: rankByRange(nowSlot.humidity, 0, 100), value: Math.round(nowSlot.humidity), unit: '%' }),
-          makeCard({ suitSymbol: '♦', suitClass: 'suit-diamond', title: '気温', rank: rankByRange(nowSlot.temperature, -5, 40), value: nowSlot.temperature.toFixed(1), unit: '℃' }),
-        ];
-        mainCards.innerHTML = cardsHtml.join('');
-
-        const weatherWord = dealerMessageFromWeatherCode(nowSlot.weatherCode);
-        if (weatherWord) {
-          dealerText.textContent = `本日は${weatherWord}です。`;
-          dealerEl.classList.add('show');
-        } else {
-          dealerText.textContent = '';
-          dealerEl.classList.remove('show');
-        }
-
-        timeline.innerHTML = slots.slice(0, 8).map((slot) => {
-          const t = new Date(slot.time).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-          return `
-            <article class="slot">
-              <div class="slot-time">${t}</div>
-              <div class="slot-line">♥ ${rankByRange(slot.cloud, 0, 100, CLOUD_RANKS_REVERSED)} / ${Math.round(slot.cloud)}%</div>
-              <div class="slot-line">♠ ${rankByRange(slot.pressure, 980, 1040)} / ${Math.round(slot.pressure)}hPa</div>
-              <div class="slot-line">♣ ${rankByRange(slot.humidity, 0, 100)} / ${Math.round(slot.humidity)}%</div>
-              <div class="slot-line">♦ ${rankByRange(slot.temperature, -5, 40)} / ${slot.temperature.toFixed(1)}℃</div>
-            </article>
-          `;
-        }).join('');
-      }
-
-      async function loadCityForecast(city) {
-        errorEl.hidden = true;
-        statusEl.textContent = '読み込み中...';
         try {
-          const slots = await getForecast(city);
+          const slots = await getForecastSlots(city);
           if (!slots.length) throw new Error('予報データがありません');
-          state.city = city;
+          state.currentCity = city;
+          state.slots = slots;
+          state.selectedSlotIndex = 0;
+
           saveJson(STORAGE_KEYS.currentCity, city);
-          render(city, slots);
-        } catch (err) {
-          errorEl.hidden = false;
-          errorEl.textContent = err.message;
-          statusEl.textContent = '読み込み失敗';
+          renderTimeline();
+          renderMain();
+          setStatus('表示中');
+        } catch (error) {
+          setStatus('読み込み失敗');
+          setError(error.message);
         }
       }
 
-      searchBtn.addEventListener('click', async () => {
-        const query = cityInput.value.trim();
-        if (!query) return;
+      refs.searchBtn.addEventListener('click', async () => {
+        const q = refs.cityInput.value.trim();
+        if (!q) return;
         try {
-          const city = await searchCity(query);
-          await loadCityForecast(city);
-        } catch (err) {
-          errorEl.hidden = false;
-          errorEl.textContent = err.message;
+          const city = await searchCity(q);
+          await loadCity(city);
+        } catch (error) {
+          setError(error.message);
         }
       });
 
-      cityInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') searchBtn.click();
+      refs.cityInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') refs.searchBtn.click();
       });
 
-      favBtn.addEventListener('click', () => {
-        if (!state.city) return;
-        if (state.favorites.some((c) => c.id === state.city.id)) {
-          statusEl.textContent = 'すでにお気に入りです';
+      refs.reloadBtn.addEventListener('click', () => {
+        if (state.currentCity) loadCity(state.currentCity);
+      });
+
+      refs.timeline.addEventListener('click', (event) => {
+        const slotEl = event.target.closest('.slot');
+        if (!slotEl) return;
+        const idx = Number(slotEl.dataset.index);
+        if (Number.isNaN(idx)) return;
+        state.selectedSlotIndex = idx;
+        renderTimeline();
+        renderMain();
+      });
+
+      refs.addFavBtn.addEventListener('click', () => {
+        if (!state.currentCity) return;
+        if (state.favorites.some((c) => c.id === state.currentCity.id)) {
+          setStatus('すでに登録済みです');
           return;
         }
         if (state.favorites.length >= 5) {
-          statusEl.textContent = 'お気に入りは5件までです';
+          setStatus('お気に入りは5件までです');
           return;
         }
-        state.favorites.push(state.city);
+        state.favorites.push(state.currentCity);
         saveJson(STORAGE_KEYS.favorites, state.favorites);
-        fillFavoriteSelect();
-        statusEl.textContent = 'お気に入りに追加しました';
+        renderFavorites();
+        setStatus('お気に入りに追加しました');
       });
 
-      favoriteSelect.addEventListener('change', () => {
-        const selected = state.favorites.find((city) => city.id === favoriteSelect.value);
+      refs.removeFavBtn.addEventListener('click', () => {
+        if (!state.currentCity) return;
+        state.favorites = state.favorites.filter((c) => c.id !== state.currentCity.id);
+        saveJson(STORAGE_KEYS.favorites, state.favorites);
+        renderFavorites();
+        setStatus('お気に入りから削除しました');
+      });
+
+      refs.favoriteSelect.addEventListener('change', () => {
+        const selected = state.favorites.find((f) => f.id === refs.favoriteSelect.value);
         if (selected) {
-          cityInput.value = selected.name;
-          loadCityForecast(selected);
+          refs.cityInput.value = selected.name;
+          loadCity(selected);
         }
       });
 
-      (async function init() {
-        fillFavoriteSelect();
-        const initialCity = state.city || await searchCity('東京');
-        cityInput.value = initialCity.name;
-        loadCityForecast(initialCity);
-      })();
+      refs.soundToggle.addEventListener('change', () => {
+        state.settings.soundEnabled = refs.soundToggle.checked;
+        saveJson(STORAGE_KEYS.settings, state.settings);
+        setStatus(refs.soundToggle.checked ? '効果音をONにしました' : '効果音をOFFにしました');
+      });
+
+      async function init() {
+        renderFavorites();
+        try {
+          const initialCity = state.currentCity || await searchCity('東京');
+          refs.cityInput.value = initialCity.name;
+          await loadCity(initialCity);
+        } catch (error) {
+          setStatus('初期化失敗');
+          setError(error.message);
+        }
+      }
+
+      init();
     </script>
   </body>
 </html>
